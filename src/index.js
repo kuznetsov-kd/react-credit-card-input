@@ -73,6 +73,14 @@ const InputWrapper = styled.label`
   & .zip-input {
     display: ${props => (props.isZipActive ? 'flex' : 'none')};
   }
+
+  & .input-valid {
+    border-bottom: green 1px solid;
+  }
+
+  & .input-invalid {
+    border-bottom: red 1px solid;
+  }
 `;
 
 const DangerText = styled.p`
@@ -115,7 +123,9 @@ type Props = {
   inputStyle: Object,
   invalidClassName: string,
   invalidStyle: Object,
-  customTextLabels: Object
+  customTextLabels: Object,
+  inputInvalidClassName: string,
+  inputValidClassName: string
 };
 type State = {
   cardImage: string,
@@ -159,7 +169,9 @@ class CreditCardInput extends Component<Props, State> {
     inputStyle: {},
     invalidClassName: 'is-invalid',
     invalidStyle: {},
-    customTextLabels: {}
+    customTextLabels: {},
+    inputInvalidClassName: 'input-invalid',
+    inputValidClassName: 'input-valid'
   };
 
   constructor(props: Props) {
@@ -248,10 +260,12 @@ class CreditCardInput extends Component<Props, State> {
           length === cardNumberLength &&
           payment.fns.validateCardNumber(cardNumber)
         ) {
+          this.props.cardNumberInputProps.isValid = true;
           this.cardExpiryField.focus();
           break;
         }
         if (cardNumberLength === lastCardTypeLength) {
+          this.props.cardNumberInputProps.isValid = false;
           this.setFieldInvalid(
             customTextLabels.invalidCardNumber || 'Card number is invalid',
             'cardNumber'
@@ -306,8 +320,10 @@ class CreditCardInput extends Component<Props, State> {
     const expiryError = isExpiryInvalid(value, customTextLabels.expiryError);
     if (value.length > 4) {
       if (expiryError) {
+        this.props.cardExpiryInputProps.isValid = false;
         this.setFieldInvalid(expiryError, 'cardExpiry');
       } else {
+        this.props.cardExpiryInputProps.isValid = true;
         this.cvcField.focus();
       }
     }
@@ -369,6 +385,11 @@ class CreditCardInput extends Component<Props, State> {
       }
     }
 
+    this.props.cardCVCInputProps.isValid = !!payment.fns.validateCardCVC(
+      CVC,
+      cardType
+    );
+
     if (isZipFieldAvailable && hasCVCReachedMaxLength(cardType, CVCLength)) {
       this.zipField.focus();
     }
@@ -416,10 +437,13 @@ class CreditCardInput extends Component<Props, State> {
     this.setFieldValid();
 
     if (zipLength >= 5 && !isZipValid(zip)) {
+      this.props.cardZipInputProps.isValid = false;
       this.setFieldInvalid(
         customTextLabels.invalidZipCode || 'Zip code is invalid',
         'cardZip'
       );
+    } else {
+      this.props.cardZipInputProps.isValid = true;
     }
 
     const { cardZipInputProps } = this.props;
@@ -529,7 +553,11 @@ class CreditCardInput extends Component<Props, State> {
                 },
                 maxLength: '19',
                 autoComplete: 'cc-number',
-                className: `credit-card-input ${inputClassName}`,
+                className: `credit-card-input ${inputClassName} ${
+                  cardNumberInputProps.isValid
+                    ? this.props.inputValidClassName
+                    : this.props.inputInvalidClassName
+                }`,
                 placeholder:
                   customTextLabels.cardNumberPlaceholder || 'Card number',
                 type: 'tel',
@@ -542,7 +570,7 @@ class CreditCardInput extends Component<Props, State> {
           </InputWrapper>
           <InputWrapper
             inputStyled={inputStyle}
-            isActive
+            isActive={enableZipInput}
             data-max="MM / YY 9"
             translateX={enableZipInput && !showZip}
           >
@@ -558,7 +586,11 @@ class CreditCardInput extends Component<Props, State> {
                   this.cardExpiryField = cardExpiryField;
                 },
                 autoComplete: 'cc-exp',
-                className: `credit-card-input ${inputClassName}`,
+                className: `credit-card-input ${inputClassName} ${
+                  cardExpiryInputProps.isValid
+                    ? this.props.inputValidClassName
+                    : this.props.inputInvalidClassName
+                }`,
                 placeholder: customTextLabels.expiryPlaceholder || 'MM/YY',
                 type: 'tel',
                 ...cardExpiryInputProps,
@@ -571,7 +603,7 @@ class CreditCardInput extends Component<Props, State> {
           </InputWrapper>
           <InputWrapper
             inputStyled={inputStyle}
-            isActive
+            isActive={enableZipInput}
             data-max="99999"
             translateX={enableZipInput && !showZip}
           >
@@ -587,7 +619,11 @@ class CreditCardInput extends Component<Props, State> {
                 },
                 maxLength: '5',
                 autoComplete: 'off',
-                className: `credit-card-input ${inputClassName}`,
+                className: `credit-card-input ${inputClassName} ${
+                  cardCVCInputProps.isValid
+                    ? this.props.inputValidClassName
+                    : this.props.inputInvalidClassName
+                }`,
                 placeholder: customTextLabels.cvcPlaceholder || 'CVC',
                 type: 'tel',
                 ...cardCVCInputProps,
@@ -615,7 +651,11 @@ class CreditCardInput extends Component<Props, State> {
                   this.zipField = zipField;
                 },
                 maxLength: '6',
-                className: `credit-card-input zip-input ${inputClassName}`,
+                className: `credit-card-input zip-input ${inputClassName} ${
+                  cardZipInputProps.isValid
+                    ? this.props.inputValidClassName
+                    : this.props.inputInvalidClassName
+                }`,
                 pattern: '[0-9]*',
                 placeholder: customTextLabels.zipPlaceholder || 'Zip',
                 type: 'text',
